@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RMIT Dream Interpreter</title>
+    <style>
+        /* --- Global Styles & RMIT Vietnam Theme --- */
+        :root {
+            --rmit-red: #D10029;
+            --rmit-black: #000000;
+            --background-color: #f4f4f4;
+            --container-bg: #ffffff;
+            --text-color: #333;
+            --border-thickness: 3px;
+            --border-radius: 15px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+        }
+
+        /* --- Main Layout Containers --- */
+        .main-container {
+            display: flex;
+            gap: 30px;
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        .panel {
+            flex: 1;
+            background: var(--container-bg);
+            padding: 25px;
+            border: var(--border-thickness) solid var(--rmit-black);
+            border-radius: var(--border-radius);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        /* --- Input Panel (Left Side) --- */
+        .input-panel h1 {
+            color: var(--rmit-red);
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group h2 {
+            font-size: 1.1em;
+            margin-bottom: 10px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 5px;
+        }
+
+        #dream-input {
+            width: 100%;
+            height: 150px;
+            padding: 10px;
+            border-radius: var(--border-radius);
+            border: var(--border-thickness) solid #ccc;
+            font-size: 1em;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        #dream-input:focus {
+            outline: none;
+            border-color: var(--rmit-red);
+        }
+
+        .options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .options-container label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 5px;
+            transition: background-color 0.2s;
+        }
+        .options-container label:hover {
+            background-color: #f0f0f0;
+        }
+
+        input[type="radio"], input[type="checkbox"] {
+            margin-right: 10px;
+            /* Custom webkit styles for better look */
+            -webkit-appearance: none;
+            appearance: none;
+            background-color: #fff;
+            width: 1.15em;
+            height: 1.15em;
+            border: 2px solid #ccc;
+            border-radius: 50%; /* for radio */
+            cursor: pointer;
+            position: relative;
+        }
+        
+        input[type="checkbox"] {
+            border-radius: 4px; /* for checkbox */
+        }
+        
+        input[type="radio"]:checked, input[type="checkbox"]:checked {
+            background-color: var(--rmit-red);
+            border-color: var(--rmit-red);
+        }
+        
+        input[type="radio"]:checked::before, input[type="checkbox"]:checked::before {
+            content: '✓';
+            font-size: 0.9em;
+            color: white;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        #verbosity-slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 10px;
+            background: #ddd;
+            outline: none;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            margin-top: 10px;
+        }
+        
+        #verbosity-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 25px;
+            height: 25px;
+            background: var(--rmit-red);
+            cursor: pointer;
+            border-radius: 50%;
+            border: var(--border-thickness) solid var(--rmit-black);
+        }
+
+        #verbosity-label {
+            text-align: center;
+            margin-top: 5px;
+            font-weight: bold;
+            color: var(--rmit-red);
+        }
+
+        #interpret-button {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.2em;
+            font-weight: bold;
+            color: var(--container-bg);
+            background-color: var(--rmit-red);
+            border: var(--border-thickness) solid var(--rmit-black);
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.1s;
+        }
+
+        #interpret-button:hover {
+            background-color: #a80021;
+        }
+        #interpret-button:active {
+            transform: scale(0.98);
+        }
+
+        /* --- Output Panel (Right Side) --- */
+        #result-container {
+            min-height: 400px;
+            padding: 15px;
+            background-color: #fafafa;
+            border: 2px dashed #ddd;
+            border-radius: var(--border-radius);
+            white-space: pre-wrap; /* Preserves line breaks from API */
+            line-height: 1.6;
+        }
+        
+        #result-container.loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        /* Simple CSS Loader */
+        .loader {
+            border: 8px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 8px solid var(--rmit-red);
+            border-left: 8px solid var(--rmit-red);
+            width: 60px;
+            height: 60px;
+            -webkit-animation: spin 1s linear infinite;
+            animation: spin 1s linear infinite;
+        }
+
+        @-webkit-keyframes spin {
+            0% { -webkit-transform: rotate(0deg); }
+            100% { -webkit-transform: rotate(360deg); }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* --- Responsive Design --- */
+        @media (max-width: 800px) {
+            .main-container {
+                flex-direction: column;
+            }
+            body {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="main-container">
+        <!-- LEFT INPUT PANEL -->
+        <div class="panel input-panel">
+            <h1>Dream Interpreter AI</h1>
+            
+            <div class="input-group">
+                <h2>Enter Your Dream</h2>
+                <textarea id="dream-input" placeholder="e.g., I was flying over a city made of chocolate..."></textarea>
+            </div>
+
+            <div class="input-group">
+                <h2>Analysis Frameworks (select multiple)</h2>
+                <div class="options-container">
+                    <label><input type="checkbox" name="framework" value="Freudian" checked> Freudian (unconscious desires)</label>
+                    <label><input type="checkbox" name="framework" value="Jungian" checked> Jungian (archetypes, collective unconscious)</label>
+                    <label><input type="checkbox" name="framework" value="Cognitive" checked> Cognitive (problem-solving, memory consolidation)</label>
+                    <label><input type="checkbox" name="framework" value="Spiritual"> Spiritual / Mystical</label>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <h2>Verbosity</h2>
+                <input type="range" id="verbosity-slider" min="1" max="3" value="2">
+                <div id="verbosity-label">1 Paragraph</div>
+            </div>
+
+            <div class="input-group">
+                <h2>Tone of Voice</h2>
+                <div class="options-container">
+                    <label><input type="radio" name="tone" value="a supportive friend" checked> Friend</label>
+                    <label><input type="radio" name="tone" value="a professional therapist"> Therapist</label>
+                    <label><input type="radio" name="tone" value="a stand-up comic"> Comic</label>
+                    <label><input type="radio" name="tone" value="a casual, friendly Vietnamese buddy using some slang"> Vietnamese Buddy</label>
+                </div>
+            </div>
+
+            <button id="interpret-button">Interpret My Dream</button>
+
+        </div>
+
+        <!-- RIGHT OUTPUT PANEL -->
+        <div class="panel output-panel">
+            <h1 style="text-align: left;">Interpretation</h1>
+            <div id="result-container">
+                Your dream analysis will appear here...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 🔴 DANGEROUS: API KEY IS EXPOSED IN CLIENT-SIDE CODE 🔴 ---
+        // This is for LOCAL DEVELOPMENT ONLY.
+        // In a real application, this key MUST be kept on a secure backend server.
+        // Anyone with this key can use your Google AI quota.
+        const API_KEY = 'AIzaSyAKYVSuED-MuyxUjl9kyVGOcNgfMEuYW8s'; 
+        console.warn('SECURITY WARNING: API Key is exposed in this script. This is not safe for production environments.');
+        
+        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
+        
+        // --- DOM Element References ---
+        const dreamInput = document.getElementById('dream-input');
+        const frameworkCheckboxes = document.querySelectorAll('input[name="framework"]');
+        const verbositySlider = document.getElementById('verbosity-slider');
+        const verbosityLabel = document.getElementById('verbosity-label');
+        const toneRadios = document.querySelectorAll('input[name="tone"]');
+        const interpretButton = document.getElementById('interpret-button');
+        const resultContainer = document.getElementById('result-container');
+        
+        const verbosityMap = {
+            '1': 'a short, 3-sentence summary',
+            '2': 'a detailed single paragraph',
+            '3': 'an in-depth, 3-paragraph analysis'
+        };
+        
+        // --- Event Listeners ---
+        verbositySlider.addEventListener('input', () => {
+            const verbosityValue = verbositySlider.value;
+            const labelText = {
+                '1': '3 Sentences',
+                '2': '1 Paragraph',
+                '3': '3 Paragraphs'
+            }[verbosityValue];
+            verbosityLabel.textContent = labelText;
+        });
+        
+        interpretButton.addEventListener('click', interpretDream);
+
+        // --- Core Logic ---
+        async function interpretDream() {
+            // 1. Get all user inputs
+            const dreamText = dreamInput.value;
+            if (!dreamText.trim()) {
+                resultContainer.innerHTML = 'Please enter a dream to interpret.';
+                return;
+            }
+
+            const selectedFrameworks = Array.from(frameworkCheckboxes)
+                .filter(cb => cb.checked)
+                .map(cb => cb.value)
+                .join(', ');
+
+            const verbosity = verbosityMap[verbositySlider.value];
+            
+            const selectedTone = document.querySelector('input[name="tone"]:checked').value;
+
+            // 2. Show loading state
+            resultContainer.innerHTML = '<div class="loader"></div>';
+            resultContainer.classList.add('loading');
+            interpretButton.disabled = true;
+            interpretButton.textContent = 'Interpreting...';
+
+            // 3. Construct the prompt for the AI
+            const prompt = `
+                You are an expert dream interpreter. A user has submitted their dream for analysis.
+                Your task is to provide a thoughtful interpretation based on the user's specified settings.
+
+                **User's Dream:**
+                "${dreamText}"
+
+                **Analysis Settings:**
+                - **Psychological Frameworks to use:** ${selectedFrameworks || 'General interpretation'}
+                - **Desired Length:** ${verbosity}
+                - **Tone of Voice:** Act as ${selectedTone}.
+
+                Please provide the interpretation now.
+            `;
+            
+            // 4. Make the API call
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        "contents": [{
+                            "parts": [{
+                                "text": prompt
+                            }]
+                        }]
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API Error: ${response.status} ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                
+                // Safely access the response text
+                const resultText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+                
+                if (resultText) {
+                    resultContainer.innerHTML = resultText;
+                } else {
+                    // Handle cases where the API returns a success status but no content (e.g., safety blocks)
+                    console.error("API Response was empty or malformed:", data);
+                    resultContainer.innerHTML = 'Sorry, the AI could not generate a response for this dream. It might be due to content safety filters. Please try a different dream.';
+                }
+
+            } catch (error) {
+                console.error('Failed to fetch interpretation:', error);
+                resultContainer.innerHTML = `An error occurred. Please check the console for details.\n\nError: ${error.message}`;
+            } finally {
+                // 5. Reset UI state
+                resultContainer.classList.remove('loading');
+                interpretButton.disabled = false;
+                interpretButton.textContent = 'Interpret My Dream';
+            }
+        }
+    </script>
+</body>
+</html>
